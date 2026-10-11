@@ -1,29 +1,30 @@
 import AppKit
-import ServiceManagement
 import SwiftUI
+
+private enum Page { case questions, topics, settings }
 
 struct ReviewView: View {
     @ObservedObject var store = Store.shared
     let onPark: () -> Void
-    @State private var openAtLogin = SMAppService.mainApp.status == .enabled
     @State private var listHeight: CGFloat = 0
-    @State private var showingTopics = false
+    @State private var page = Page.questions
     @ObservedObject private var topics = TopicStore.shared
+    @ObservedObject private var settings = AppSettings.shared
 
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                if showingTopics {
-                    Button { showingTopics = false } label: { Image(systemName: "chevron.left") }
-                        .buttonStyle(.borderless)
-                        .help("Back to questions")
-                    Text("Topics to revisit").font(.headline)
-                    Spacer()
-                } else {
+                if page == .questions {
                     Text("Parked questions").font(.headline)
                     Spacer()
                     Button(action: onPark) { Label("Park", systemImage: "plus") }
-                        .help("⌥⌘P")
+                        .help(settings.parkShortcut.display)
+                } else {
+                    Button { page = .questions } label: { Image(systemName: "chevron.left") }
+                        .buttonStyle(.borderless)
+                        .help("Back to questions")
+                    Text(page == .topics ? "Topics to revisit" : "Settings").font(.headline)
+                    Spacer()
                 }
             }
             .frame(height: 24)
@@ -31,13 +32,15 @@ struct ReviewView: View {
 
             Divider()
 
-            if showingTopics {
+            if page == .topics {
                 TopicsView()
+            } else if page == .settings {
+                SettingsView()
             } else if store.items.isEmpty {
                 VStack(spacing: 8) {
                     Image(systemName: "checkmark.circle").font(.system(size: 34)).foregroundStyle(.green)
                     Text("All clear").font(.headline)
-                    Text("⌥⌘P to park a question")
+                    Text("\(settings.parkShortcut.display) to park a question")
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity)
@@ -62,21 +65,17 @@ struct ReviewView: View {
             Divider()
 
             HStack {
-                Button(topics.open.isEmpty ? "Topics" : "Topics (\(topics.open.count))") { showingTopics.toggle() }
-                    .fontWeight(showingTopics ? .semibold : .regular)
+                Button(topics.open.isEmpty ? "Topics" : "Topics (\(topics.open.count))") {
+                    page = page == .topics ? .questions : .topics
+                }
+                .fontWeight(page == .topics ? .semibold : .regular)
                 Button("Open folder") { NSWorkspace.shared.open(store.root) }
-                Toggle("Open at login", isOn: $openAtLogin)
-                    .toggleStyle(.checkbox)
-                    .onChange(of: openAtLogin) { _, on in
-                        do {
-                            if on { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
-                        } catch {
-                            NSLog("Parked: login item change failed: \(error)")
-                            openAtLogin = SMAppService.mainApp.status == .enabled
-                        }
-                    }
                 Spacer()
-                Button("Quit") { NSApp.terminate(nil) }
+                Button { page = page == .settings ? .questions : .settings } label: {
+                    Image(systemName: page == .settings ? "gearshape.fill" : "gearshape")
+                        .font(.body)
+                }
+                .help("Settings")
             }
             .buttonStyle(.borderless)
             .font(.caption)
