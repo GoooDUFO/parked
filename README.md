@@ -1,5 +1,7 @@
 # Parked
 
+<img src="Resources/AppIcon.png" width="128" alt="Parked app icon">
+
 A tiny macOS menu bar app for parking questions while studying, so you don't stop mid-review to go down a rabbit hole. Park the question, keep going, and clear the list later.
 
 ## Download
@@ -39,3 +41,9 @@ Requires macOS 14+ and Xcode / Swift 5.9+.
 ```
 
 This builds a universal `Parked.app`, ad-hoc signs it, and installs it to `~/Applications`. Run `./build.sh --release` to package `build/Parked-<version>.zip` instead.
+
+To regenerate the app icon after editing `scripts/make-icon.swift`, run `swift scripts/make-icon.swift`.
+
+## License
+
+[MIT](LICENSE)
