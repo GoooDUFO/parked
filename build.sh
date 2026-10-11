@@ -1,14 +1,20 @@
 #!/bin/zsh
-# Builds Parked.app and installs it to ~/Applications.
+# Builds Parked.app (universal: Apple Silicon + Intel) and installs it to ~/Applications.
+#   ./build.sh            build + install
+#   ./build.sh --release  build + zip to build/Parked-<version>.zip (no install)
 set -euo pipefail
 cd "$(dirname "$0")"
 
-swift build -c release
+VERSION="1.1"
+BUILD_FLAGS=(-c release --arch arm64 --arch x86_64)
+
+swift build "${BUILD_FLAGS[@]}"
+BIN_DIR="$(swift build "${BUILD_FLAGS[@]}" --show-bin-path)"
 
 APP="build/Parked.app"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-cp .build/release/Parked "$APP/Contents/MacOS/Parked"
+cp "$BIN_DIR/Parked" "$APP/Contents/MacOS/Parked"
 
 cat > "$APP/Contents/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
@@ -20,8 +26,8 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
     <key>CFBundleIdentifier</key><string>local.parked.questions</string>
     <key>CFBundleExecutable</key><string>Parked</string>
     <key>CFBundlePackageType</key><string>APPL</string>
-    <key>CFBundleShortVersionString</key><string>1.0</string>
-    <key>CFBundleVersion</key><string>1</string>
+    <key>CFBundleShortVersionString</key><string>VERSION_PLACEHOLDER</string>
+    <key>CFBundleVersion</key><string>VERSION_PLACEHOLDER</string>
     <key>LSMinimumSystemVersion</key><string>14.0</string>
     <key>LSUIElement</key><true/>
     <key>NSHighResolutionCapable</key><true/>
@@ -29,7 +35,16 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
 </plist>
 PLIST
 
+sed -i '' "s/VERSION_PLACEHOLDER/$VERSION/g" "$APP/Contents/Info.plist"
 codesign --force --sign - "$APP"
+
+if [[ "${1:-}" == "--release" ]]; then
+    ZIP="build/Parked-$VERSION.zip"
+    rm -f "$ZIP"
+    ditto -c -k --keepParent "$APP" "$ZIP"
+    echo "Packaged $ZIP"
+    exit 0
+fi
 
 mkdir -p ~/Applications
 pkill -x Parked 2>/dev/null || true

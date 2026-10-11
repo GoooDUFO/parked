@@ -134,7 +134,7 @@ struct SettingsView: View {
             Divider()
 
             HStack {
-                Text("Parked 1.1").font(.caption).foregroundStyle(.secondary)
+                Text("Parked \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "")").font(.caption).foregroundStyle(.secondary)
                 Spacer()
                 Button("Quit Parked") { NSApp.terminate(nil) }
             }
