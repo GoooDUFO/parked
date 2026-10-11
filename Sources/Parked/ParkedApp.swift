@@ -1,5 +1,4 @@
 import AppKit
-import Carbon
 
 @main
 enum ParkedApp {
@@ -20,10 +19,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         menuBar = MenuBarController(onPark: { [capture] in capture.show() })
 
-        // ⌥⌘P: park a question.
-        HotKeys.shared.register(keyCode: kVK_ANSI_P, modifiers: optionKey | cmdKey) { [weak self] in
+        // Global shortcut (⌥⌘P by default, changeable in Settings): park a question.
+        AppSettings.shared.onParkHotKey = { [weak self] in
             self?.menuBar?.close()
             self?.capture.show()
         }
+        AppSettings.shared.activateHotKey()
     }
 }
